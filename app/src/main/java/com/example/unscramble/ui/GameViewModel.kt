@@ -63,6 +63,10 @@ class GameViewModel : ViewModel() {
         userGuess = guessedWord
     }
 
+    fun addWords(){
+
+    }
+
     /*
      * Checks if the user's guess is correct.
      * Increases the score accordingly.

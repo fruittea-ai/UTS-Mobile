@@ -116,6 +116,16 @@ fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
                     fontSize = 16.sp
                 )
             }
+
+            OutlinedButton(
+                onClick = { gameViewModel.addWords() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Add Words",
+                    fontSize = 16.sp
+                )
+            }
         }
 
         GameStatus(score = gameUiState.score, modifier = Modifier.padding(20.dp))
@@ -249,6 +259,7 @@ private fun FinalScoreDialog(
         }
     )
 }
+
 
 @Preview(showBackground = true)
 @Composable
