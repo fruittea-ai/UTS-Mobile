@@ -16,22 +16,32 @@
 
 package com.example.unscramble.ui
 
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.unscramble.data.AppDatabase
 import com.example.unscramble.data.MAX_NO_OF_WORDS
 import com.example.unscramble.data.SCORE_INCREASE
+import com.example.unscramble.data.Word
 import com.example.unscramble.data.allWords
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel containing the app data and methods to process the data
  */
-class GameViewModel : ViewModel() {
+class GameViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val db = AppDatabase.getDatabase(application)
+    private val wordDao = db.wordDao()
 
     // Game UI state
     private val _uiState = MutableStateFlow(GameUiState())
@@ -44,8 +54,19 @@ class GameViewModel : ViewModel() {
     private var usedWords: MutableSet<String> = mutableSetOf()
     private lateinit var currentWord: String
 
+    private val userAddedWords = mutableSetOf<String>()
+
     init {
-        resetGame()
+        viewModelScope.launch {
+            wordDao.getAllWords().collect { wordsFromDb ->
+                userAddedWords.clear()
+                userAddedWords.addAll(wordsFromDb)
+
+                if (_uiState.value.currentScrambledWord.isEmpty()) {
+                    resetGame()
+                }
+            }
+        }
     }
 
     /*
@@ -63,8 +84,16 @@ class GameViewModel : ViewModel() {
         userGuess = guessedWord
     }
 
-    fun addWords(){
+    fun addWords(newWord: String){
+        if (newWord.isNotBlank()) {
+            val wordLower = newWord.lowercase()
 
+            userAddedWords.add(wordLower)
+
+            viewModelScope.launch {
+                wordDao.insert(Word(word = wordLower))
+            }
+        }
     }
 
     /*
@@ -135,6 +164,8 @@ class GameViewModel : ViewModel() {
 
     private fun pickRandomWordAndShuffle(): String {
         // Continue picking up a new random word until you get one that hasn't been used before
+        val totalWords = allWords + usedWords
+        if (totalWords.isEmpty()) return ""
         currentWord = allWords.random()
         return if (usedWords.contains(currentWord)) {
             pickRandomWordAndShuffle()
