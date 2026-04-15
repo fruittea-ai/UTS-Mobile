@@ -16,6 +16,7 @@
 package com.example.unscramble.ui
 
 import android.app.Activity
+import android.app.AlertDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,9 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,6 +66,11 @@ import com.example.unscramble.ui.theme.UnscrambleTheme
 fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
     val gameUiState by gameViewModel.uiState.collectAsState()
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
+
+    var showAddWordsDialog by remember { mutableStateOf(false) }
+    var newWordInput by remember { mutableStateOf("") }
+
+
 
     Column(
         modifier = Modifier
@@ -118,7 +127,7 @@ fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
             }
 
             OutlinedButton(
-                onClick = { gameViewModel.addWords() },
+                onClick = { showAddWordsDialog = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -136,7 +145,61 @@ fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
                 onPlayAgain = { gameViewModel.resetGame() }
             )
         }
+
+        if (showAddWordsDialog)  {
+            AddWordsDialog(
+                wordInput = newWordInput,
+                onWordInputChange = { newWordInput = it },
+                onDismiss = {
+                    showAddWordsDialog = false
+                    newWordInput = ""
+                },
+                onConfirm = {
+                    gameViewModel.addWords(newWordInput)
+                    showAddWordsDialog = false
+                    newWordInput = ""
+                }
+            )
+        }
     }
+}
+
+@Composable
+fun AddWordsDialog(
+    wordInput: String,
+    onWordInputChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Tambah Kata Baru")},
+        text = {
+            Column {
+                Text("Masukkan kata bahasa inggris:")
+                OutlinedTextField(
+                    value = wordInput,
+                    onValueChange = onWordInputChange,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {Text("Contoh: banana")}
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = wordInput.isNotBlank()
+            ) {
+                Text("Simpan")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Batal")
+            }
+        }
+    )
 }
 
 @Composable
